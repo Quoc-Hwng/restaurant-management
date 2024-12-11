@@ -13,8 +13,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLoginMutation } from "@/queries/useAuth";
+import { toast } from "@/hooks/use-toast";
+import { handleErrorApi } from "@/lib/utils";
 
 export default function LoginForm() {
+  const loginMutation = useLoginMutation();
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
     defaultValues: {
@@ -22,6 +26,23 @@ export default function LoginForm() {
       password: "",
     },
   });
+
+  const onSubmit = async (data: LoginBodyType) => {
+    if (loginMutation.isPending) return;
+    try {
+      const result = await loginMutation.mutateAsync(data);
+      toast({
+        description: result.payload.message,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      handleErrorApi({
+        error,
+        setError: form.setError,
+      });
+    }
+  };
+
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader>
@@ -33,8 +54,11 @@ export default function LoginForm() {
       <CardContent>
         <Form {...form}>
           <form
-            className="soace-y-2 max-w-[600px] flex-shrink-0 w-full"
+            className="space-y-2 max-w-[600px] flex-shrink-0 w-full"
             noValidate
+            onSubmit={form.handleSubmit(onSubmit, (err) => {
+              console.warn(err);
+            })}
           >
             <div className="grid gap-4">
               <FormField

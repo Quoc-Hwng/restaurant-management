@@ -14,15 +14,11 @@ import { useLogoutMutation } from "@/queries/useAuth";
 import { handleErrorApi } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useAccountQuery } from "@/queries/useAccount";
-import { useState } from "react";
 
 export default function DropdownAvatar() {
   const logoutMutation = useLogoutMutation();
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
-  const { data } = useAccountQuery({
-    enabled: isAuth,
-  });
+  const { data } = useAccountQuery();
   const account = data?.payload.data;
 
   const logout = async () => {
@@ -30,7 +26,6 @@ export default function DropdownAvatar() {
     try {
       await logoutMutation.mutateAsync();
       router.push("/");
-      setIsAuth(false);
     } catch (error) {
       handleErrorApi({
         error,

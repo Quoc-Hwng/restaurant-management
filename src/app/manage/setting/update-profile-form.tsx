@@ -15,18 +15,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useRef, useState } from "react";
 import { useAccountQuery, useUpdateMeMutation } from "@/queries/useAccount";
 import { useUploadMediaMutation } from "@/queries/useMedia";
-import { toast } from "@/hooks/use-toast";
 import { handleErrorApi } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 export default function UpdateProfileForm() {
   const [file, setFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const { data, refetch } = useAccountQuery({
-    enabled: true,
-  });
+  const { data, refetch } = useAccountQuery();
   const updateMeMutation = useUpdateMeMutation();
   const uploadMediaMutation = useUploadMediaMutation();
-
   const form = useForm<UpdateMeBodyType>({
     resolver: zodResolver(UpdateMeBody),
     defaultValues: {
@@ -37,24 +34,27 @@ export default function UpdateProfileForm() {
 
   const avatar = form.watch("avatar");
   const name = form.watch("name");
-  const previewAvatar = file ? URL.createObjectURL(file) : avatar;
-
   useEffect(() => {
     if (data) {
       const { name, avatar } = data.payload.data;
-      // Reset defaultValues = giá trị từ API
-      form.reset({
-        name,
-        avatar: avatar ?? undefined,
-      });
+      if (
+        form.getValues("name") !== name ||
+        form.getValues("avatar") !== avatar
+      ) {
+        form.reset({
+          name,
+          avatar: avatar ?? undefined,
+        });
+      }
     }
-  }, [data]);
+  }, [form, data]);
+
+  const previewAvatar = file ? URL.createObjectURL(file) : avatar;
 
   const reset = () => {
     form.reset();
     setFile(null);
   };
-
   const onSubmit = async (values: UpdateMeBodyType) => {
     if (updateMeMutation.isPending) return;
     try {
@@ -83,14 +83,15 @@ export default function UpdateProfileForm() {
       });
     }
   };
-
   return (
     <Form {...form}>
       <form
         noValidate
         className="grid auto-rows-max items-start gap-4 md:gap-8"
         onReset={reset}
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit(onSubmit, (e) => {
+          console.log(e);
+        })}
       >
         <Card x-chunk="dashboard-07-chunk-0">
           <CardHeader>
@@ -120,7 +121,7 @@ export default function UpdateProfileForm() {
                           if (file) {
                             setFile(file);
                             field.onChange(
-                              "http://localhost:3000/" + file.name
+                              "http://localhost:3000/" + field.name
                             );
                           }
                         }}
